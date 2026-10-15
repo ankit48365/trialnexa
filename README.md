@@ -28,7 +28,7 @@ updated `pyproject.toml` and `uv.lock` together. There are no runtime dependenci
 ```console
 uv build
 uv venv .venv-installed
-uv pip install --python .venv-installed dist/trialnexa-0.0.0.dev0-py3-none-any.whl
+uv pip install --python .venv-installed dist/trialnexa-0.0.0.dev1-py3-none-any.whl
 ```
 
 Run the installed command directly, including from a directory outside the
@@ -45,9 +45,23 @@ On Windows PowerShell:
 ```
 
 The source distribution in `dist/` can also be installed with `uv pip install`
-using the same `--python` argument. The version `0.0.0.dev0` is an unpublished
+using the same `--python` argument. The version `0.0.0.dev1` is an unpublished
 development version, defined only in `pyproject.toml`. Installed code can read it
 with `importlib.metadata.version("trialnexa")`.
+
+To install or update the built wheel as a dependency in a separate uv project,
+run from that project's directory (replace the example absolute path):
+
+```console
+uv add /absolute/path/to/trialnexa/dist/trialnexa-0.0.0.dev1-py3-none-any.whl
+uv run trialnexa --help
+uv run trialnexa init
+```
+
+Increment the development version before distributing changed local builds.
+uv locks the wheel's hash; replacing an already locked wheel with different
+contents under the same filename causes a hash mismatch, even with `--reinstall`.
+Add the new version's wheel path to update the dependency and lockfile together.
 
 **Public-index installation is pending a separately approved PyPI release.**
 Only after that release has been approved and published will users be able to
@@ -134,7 +148,7 @@ uv run --locked ruff check .
 uv run --locked ruff format --check .
 uv run --locked pytest
 uv build
-uv run --locked python scripts/smoke_distribution.py dist/trialnexa-0.0.0.dev0-py3-none-any.whl dist/trialnexa-0.0.0.dev0.tar.gz
+uv run --locked python scripts/smoke_distribution.py dist/trialnexa-0.0.0.dev1-py3-none-any.whl dist/trialnexa-0.0.0.dev1.tar.gz
 ```
 
 The smoke test installs each built distribution into a fresh temporary virtual
