@@ -89,8 +89,11 @@ def check_distribution(artifact: Path) -> None:
         result = run("init", answer="YeS\n")
         assert "Workspace initialized:" in result.stdout, result
         paths = set(workspace.rglob("*"))
-        assert len(paths) == 16, paths
+        assert len(paths) == 17, paths
         assert all(path.is_dir() for path in paths), paths
+        imports = workspace / "cdisc_reference" / "cdash" / "imports"
+        assert imports.is_dir()
+        assert list(imports.iterdir()) == []
         existing = workspace / "cdisc_reference" / "study_profiles" / "keep.txt"
         existing.write_text("preserve", encoding="utf-8")
         run("init", answer="y\n")

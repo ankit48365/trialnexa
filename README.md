@@ -88,6 +88,7 @@ After approval, the following directories are created, with **no files**:
 <current-working-directory>/
 └── cdisc_reference/
     ├── cdash/
+    │   ├── imports/
     │   └── v2.3/
     ├── sdtm/
     │   └── sdtmig_v3.4/
@@ -106,6 +107,9 @@ After approval, the following directories are created, with **no files**:
 
 No terminology release version is assumed; `controlled_terminology/` remains
 empty. No JSON, YAML, catalogs, manifests, or placeholder files are generated.
+`cdash/imports/` is an empty location for separately supplied source files, such
+as `CDASHIG_v2.3.csv`. Init does not create that CSV or generate `domains.json`,
+`variables.json`, `mappings_to_sdtm.json`, or `manifest.json` in `cdash/v2.3/`.
 
 Every invocation asks for confirmation, including repeat runs. Running init
 again in the same workspace fills in missing directories, preserves existing

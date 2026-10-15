@@ -11,6 +11,7 @@ def expected_directories() -> set[Path]:
         for relative in (
             "cdisc_reference",
             "cdisc_reference/cdash",
+            "cdisc_reference/cdash/imports",
             "cdisc_reference/cdash/v2.3",
             "cdisc_reference/sdtm",
             "cdisc_reference/sdtm/sdtmig_v3.4",

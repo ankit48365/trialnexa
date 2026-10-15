@@ -146,7 +146,7 @@ def test_every_invocation_requires_consent(
 
     monkeypatch.setattr("builtins.input", respond)
     assert cli.main(["init"]) == 0
-    missing = tmp_path / "cdisc_reference" / "study_profiles"
+    missing = tmp_path / "cdisc_reference" / "cdash" / "imports"
     missing.rmdir()
     assert cli.main(["init"]) == 0
     assert not missing.exists()

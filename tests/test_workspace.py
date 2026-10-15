@@ -21,9 +21,15 @@ def test_partial_tree_and_existing_content_are_preserved(
 ) -> None:
     existing = tmp_path / "cdisc_reference" / "define_xml" / "v2.1" / "schemas"
     existing.mkdir(parents=True)
+    imports = tmp_path / "cdisc_reference" / "cdash" / "imports"
+    imports.mkdir(parents=True)
     unrelated = tmp_path / "unrelated"
     unrelated.mkdir()
-    files = [tmp_path / "notes.txt", existing / "existing.xml"]
+    files = [
+        tmp_path / "notes.txt",
+        existing / "existing.xml",
+        imports / "CDASHIG_v2.3.csv",
+    ]
     for file in files:
         file.write_bytes(b"preserve exactly\x00\xff")
     initialize_workspace(tmp_path)
@@ -44,6 +50,7 @@ def test_partial_tree_and_existing_content_are_preserved(
     [
         "cdisc_reference",
         "cdisc_reference/cdash",
+        "cdisc_reference/cdash/imports",
         "cdisc_reference/cdash/v2.3",
         "cdisc_reference/define_xml/v2.1/schemas",
         "cdisc_reference/study_profiles",

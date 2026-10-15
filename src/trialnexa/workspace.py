@@ -7,6 +7,7 @@ REFERENCE_ROOT = Path("cdisc_reference")
 REFERENCE_DIRECTORIES = (
     REFERENCE_ROOT,
     REFERENCE_ROOT / "cdash",
+    REFERENCE_ROOT / "cdash" / "imports",
     REFERENCE_ROOT / "cdash" / "v2.3",
     REFERENCE_ROOT / "sdtm",
     REFERENCE_ROOT / "sdtm" / "sdtmig_v3.4",
