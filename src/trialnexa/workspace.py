@@ -39,6 +39,42 @@ class ReferencePaths:
     destination: Path
 
 
+def resolve_initialized_workspace(workspace: Path | None = None) -> Path:
+    """Find an existing reference marker, without the importer's Git fallback.
+
+    A partial reference hierarchy is allowed: missing standards are unconfigured.
+    A file, broken link or junction at the nearest marker is an error, not a
+    reason to silently select a more distant workspace.
+    """
+    if workspace is None:
+        cwd = Path.cwd().resolve(strict=True)
+        root = None
+        for ancestor in (cwd, *cwd.parents):
+            try:
+                (ancestor / REFERENCE_ROOT).lstat()
+            except FileNotFoundError:
+                continue
+            root = ancestor
+            break
+        if root is None:
+            raise WorkspaceError(
+                "No initialized workspace found. Run trialnexa init at the "
+                "intended workspace root first."
+            )
+    else:
+        root = workspace.resolve(strict=True)
+    for path in (root, root / REFERENCE_ROOT):
+        if path.is_junction():
+            raise WorkspaceError(f"Workspace directory is a junction: {path}")
+        try:
+            _check_directory(path, allow_missing=False)
+        except FileNotFoundError as exc:
+            raise WorkspaceError(
+                f"Missing workspace directory: {path}. Run trialnexa init first."
+            ) from exc
+    return root
+
+
 def resolve_reference_paths(
     source: Path, workspace: Path | None = None
 ) -> ReferencePaths:

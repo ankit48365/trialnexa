@@ -20,6 +20,9 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
+dependencies = [
+    "pyyaml>=6.0.3",
+]
 
 [project.scripts]
 trialnexa = "trialnexa.cli:main"

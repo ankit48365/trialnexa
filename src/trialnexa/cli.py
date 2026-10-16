@@ -7,6 +7,9 @@ from pathlib import Path
 
 from trialnexa.reference import ReferenceError
 from trialnexa.reference.service import import_cdash
+from trialnexa.study import StudyError
+from trialnexa.study.service import initialize_study, list_studies
+from trialnexa.study.validation import validate_study
 from trialnexa.workspace import WorkspaceError, initialize_workspace
 
 
@@ -46,10 +49,50 @@ def _init() -> int:
     return 0
 
 
+def _study(arguments: argparse.Namespace) -> int:
+    try:
+        if arguments.study_command == "init":
+            result = initialize_study(arguments.study_id, workspace=arguments.workspace)
+            for warning in result.warnings:
+                print(f"Warning: {warning}", file=sys.stderr)
+            print(f"Study initialized: {result.path}")
+            print(f"Generated: {result.path / 'study.yaml'}")
+        elif arguments.study_command == "list":
+            studies = list_studies(workspace=arguments.workspace)
+            print(
+                "\n".join(studies)
+                if studies
+                else "No studies found. Use trialnexa study init ID."
+            )
+        else:
+            validation = validate_study(
+                arguments.study_id, workspace=arguments.workspace
+            )
+            for error in validation.errors:
+                print(f"Error: {error}", file=sys.stderr)
+            for warning in validation.warnings:
+                print(f"Warning: {warning}", file=sys.stderr)
+            status = "failed" if validation.errors else "structurally valid"
+            print(
+                f"Study configuration {status}: {len(validation.errors)} error(s), "
+                f"{len(validation.warnings)} warning(s). "
+                "No clinical rules or checksum verification performed."
+            )
+            return 1 if validation.errors else 0
+    except KeyboardInterrupt:
+        print("\nStudy operation interrupted.", file=sys.stderr)
+        return 130
+    except (StudyError, WorkspaceError, OSError) as exc:
+        print(f"Unable to {arguments.study_command} study: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI and return its process exit code."""
     parser = argparse.ArgumentParser(
-        prog="trialnexa", description="Set up workspaces and import reference metadata."
+        prog="trialnexa",
+        description="Manage workspaces, study configuration and offline references.",
     )
     subcommands = parser.add_subparsers(dest="command", required=True)
     subcommands.add_parser(
@@ -74,9 +117,32 @@ def main(argv: Sequence[str] | None = None) -> int:
     importer.add_argument(
         "--force", action="store_true", help="Replace different reference files."
     )
+    study = subcommands.add_parser(
+        "study", help="Manage studies in an initialized workspace."
+    )
+    study_commands = study.add_subparsers(dest="study_command", required=True)
+    for name, help_text in (
+        ("init", "Create a new study directory tree and study.yaml."),
+        ("list", "List studies in deterministic ID order."),
+        (
+            "validate",
+            "Check study configuration and paths; no clinical data validation.",
+        ),
+    ):
+        command = study_commands.add_parser(name, help=help_text, description=help_text)
+        if name != "list":
+            command.add_argument(
+                "study_id",
+                help="1–64 ASCII letters/digits/'_'/'-'; start with a letter/digit.",
+            )
+        command.add_argument(
+            "--workspace", type=Path, help="Explicit initialized workspace root."
+        )
     arguments = parser.parse_args(argv)
     if arguments.command == "init":
         return _init()
+    if arguments.command == "study":
+        return _study(arguments)
     try:
         result = import_cdash(
             arguments.source, workspace=arguments.workspace, force=arguments.force

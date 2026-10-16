@@ -1,9 +1,11 @@
 # TrialNexa
 
-TrialNexa is a Python CLI for setting up a workspace and importing offline CDASH
-reference metadata for future clinical trial data processing. `init` creates an
+TrialNexa is a Python CLI for setting up workspaces, managing study configuration,
+and importing offline CDASH reference metadata for future clinical trial data
+processing. `init` creates an
 **empty CDISC reference directory hierarchy** after explicit confirmation.
 `reference import` converts a user-supplied CDASHIG 2.3 CSV into three JSON files.
+`study init`, `study list`, and `study validate` manage independently named studies.
 The package does not include or download licensed CDISC content.
 
 Python 3.12 or newer is required. Supported Python versions are 3.12, 3.13, and
@@ -22,7 +24,8 @@ uv run --locked trialnexa --help
 
 `uv sync --locked` installs the project in editable mode and the development
 tools specified in `uv.lock`. Use `uv add` for dependency changes and commit the
-updated `pyproject.toml` and `uv.lock` together. There are no runtime dependencies.
+updated `pyproject.toml` and `uv.lock` together. PyYAML is the only runtime dependency,
+used to serialize and safely parse editable study configuration.
 
 ## Build and install locally
 
@@ -166,6 +169,174 @@ the previous snapshot if installation fails. See the [importer contract and JSON
 schema](docs/cdash-reference.md) for validation rules, recovery limits, column
 mapping, errors, and the optional full-source integration test.
 
+## Manage studies
+
+Run these commands in an initialized workspace or any of its subdirectories:
+
+```console
+trialnexa study init ABC-2026-01
+trialnexa study init pilot_02
+trialnexa study list
+trialnexa study validate ABC-2026-01
+```
+
+Each `init` and `validate` command requires exactly one study ID. IDs contain
+1–64 ASCII letters, digits, `_`, or `-`, starting with a letter or digit.
+Windows device names (`CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`)
+are reserved, case-insensitively. Dots, spaces, separators, drive paths, Unicode,
+and traversal are rejected. IDs are supplied by the user; no study is hardcoded.
+Use distinct IDs that also remain distinct on case-insensitive filesystems.
+
+The nearest current/ancestor directory with a real `cdisc_reference/` directory
+is the workspace root. A partial reference hierarchy is allowed; absent standard
+groups are unconfigured. An invalid nearest marker is an error. Unlike reference
+import, study commands require this initialized marker and do not fall back to a
+Git checkout. Run `trialnexa init` at the intended root first. All three commands
+also accept `--workspace ROOT` to select an initialized root explicitly.
+
+Study initialization creates `studies/` if absent, then this exact layout:
+
+```text
+<workspace>/
+├── cdisc_reference/                 # existing, shared, unchanged
+└── studies/
+    └── ABC-2026-01/                 # user-provided ID
+        ├── study.yaml
+        ├── raw/
+        │   ├── crf/
+        │   └── external/
+        ├── cdash/
+        │   ├── data/
+        │   └── metadata/
+        ├── sdtm/
+        │   ├── data/
+        │   └── metadata/
+        ├── adam/
+        │   ├── data/
+        │   └── metadata/
+        ├── mappings/
+        │   ├── crf_to_cdash/
+        │   ├── cdash_to_sdtm/
+        │   └── sdtm_to_adam/
+        ├── outputs/
+        │   ├── define_xml/
+        │   ├── validation/
+        │   ├── reports/
+        │   └── submission/
+        └── logs/
+```
+
+No clinical records, mapping files, reports, placeholder metadata, or `.gitkeep`
+files are generated. An existing study path causes an error with guidance to run
+`study validate`; its YAML and data are preserved. There is no overwrite flag.
+
+The generated YAML has this schema. This example assumes exactly the shown
+single version directories exist; versions are discovered, never defaults:
+
+```yaml
+study_id: ABC-2026-01
+standards:
+  cdash: "2.3"
+  sdtmig: "3.4"
+  adamig: "1.3"
+  define_xml: "2.1"
+  controlled_terminology: ""
+paths:
+  raw:
+    crf: "./raw/crf"
+    external: "./raw/external"
+  cdash:
+    data: "./cdash/data"
+    metadata: "./cdash/metadata"
+  sdtm:
+    data: "./sdtm/data"
+    metadata: "./sdtm/metadata"
+  adam:
+    data: "./adam/data"
+    metadata: "./adam/metadata"
+  mappings:
+    crf_to_cdash: "./mappings/crf_to_cdash"
+    cdash_to_sdtm: "./mappings/cdash_to_sdtm"
+    sdtm_to_adam: "./mappings/sdtm_to_adam"
+  outputs:
+    define_xml: "./outputs/define_xml"
+    validation: "./outputs/validation"
+    reports: "./outputs/reports"
+    submission: "./outputs/submission"
+validation:
+  offline: true
+  rule_engine: cdisc_core
+  custom_rules: true
+reference:
+  root: "../../cdisc_reference"
+  verify_checksums: true
+```
+
+YAML quoting may differ, but versions and IDs remain strings, empty versions
+remain empty strings, and the three boolean settings remain booleans. All paths
+are relative to the **parent of `study.yaml`**, independent of the shell's current
+directory. `logs/` is required even though it has no YAML path entry.
+
+Version discovery scans only immediate directories using these conventions:
+
+| YAML key | Directory below `cdisc_reference/` |
+| --- | --- |
+| `cdash` | `cdash/v<version>/` |
+| `sdtmig` | `sdtm/sdtmig_v<version>/` |
+| `adamig` | `adam/adamig_v<version>/` |
+| `define_xml` | `define_xml/v<version>/` |
+| `controlled_terminology` | `controlled_terminology/<release>/` |
+
+Version/release names must be portable single components: 1–128 ASCII letters,
+digits, `.`, `_`, or `-`, beginning with a letter/digit, without a trailing dot or
+a Windows device basename. Files and unrelated version names are ignored; linked
+candidate directories are rejected. Exactly one candidate sets the string.
+No candidate leaves `""` and prints an unconfigured warning. Multiple candidates
+also leave `""` and print **all available versions**, so the user can review and
+edit the setting explicitly. This applies equally to terminology releases.
+
+The original `trialnexa init` creates both Define-XML `v2.0/` and `v2.1/`, so a
+fresh workspace leaves `define_xml` empty with an ambiguity warning. Its other
+empty version directories are discoverable candidates. Directory existence
+does not establish complete, approved, or verified reference metadata.
+
+`study list` prints sorted IDs, one per line, for direct study directories with a
+regular `study.yaml`. With no studies, it prints a helpful message without
+creating `studies/`. Unrelated files and directories without YAML are ignored.
+Listing does not parse YAML; use validation to inspect it. Unreadable directories,
+linked entries, invalid study names with YAML, and non-file YAML entries are errors.
+
+`study validate` checks the ID, required sections/keys and types, the prescribed
+directory layout (including `logs/`), paths contained in the study, shared
+reference root, and existence of each configured version. Path values must match
+the expected layout, with an optional leading `./`; absolute paths, traversal,
+symlinks, and Windows junctions are rejected. `reference.root` must point to
+`../../cdisc_reference`. YAML must be a UTF-8 mapping, at most 1 MiB, with unique
+string keys and no aliases or executable tags. Missing or malformed configuration,
+collisions, missing directories, and missing configured versions are errors.
+
+Empty versions produce **unconfigured warnings**. Existing configured versions
+produce **not verified warnings** for reference completeness/content and checksums;
+empty directories are identified explicitly. `verify_checksums: true` is a saved
+configuration setting only. No manifest is required or generated. Validation
+does not execute CDISC CORE, examine clinical datasets, transform data, verify
+checksums, or establish regulatory compliance. Listing and validation never write
+files; none of these commands access the network.
+
+Creation stages the complete tree and YAML beside the destination, flushes the
+YAML, then installs the directory by rename. Failed writes, directory creation,
+or installation leave no partially initialized final study. A hidden per-study
+lock coordinates TrialNexa writers. Process termination/power loss or concurrent
+external filesystem changes are outside the transaction guarantee. If a process
+is killed, inspect any `.ID.init-*` staging directory and `.ID.init.lock` under
+`studies/` after ensuring no initialization is active. Cleanup of locked temporary
+files on Windows is best effort. Existing study paths are never deliberately
+replaced, and references are never modified.
+
+Successful init/list and structurally valid configuration exit **0**, including
+validation with warnings. Configuration/filesystem errors exit **1**; invalid CLI
+syntax exits **2**; Ctrl+C exits **130**. Validation prints error/warning counts.
+
 ## Development checks
 
 Run the repository's prescribed quality checks:
@@ -183,7 +354,10 @@ The smoke test installs each built distribution into a fresh temporary virtual
 environment and runs its console script from a separate temporary workspace,
 without `PYTHONPATH`. It checks help, default cancellation, consent, the empty
 tree, repeat initialization, and CDASH import/rerun/error behavior using a small
-synthetic CSV. `uv build` also builds the wheel from the sdist.
+synthetic CSV. It also checks installed study init/list/validate, unsafe IDs,
+duplicate creation, and validation errors from a nested directory. Distribution
+installation may fetch runtime/build dependencies; the tested CLI operations are
+offline. `uv build` also builds the wheel from the sdist.
 Automated tests use isolated temporary directories; filesystem errors are
 simulated so those checks also run on systems with elevated permissions.
 Symbolic-link tests skip if the host cannot create links.
@@ -191,7 +365,7 @@ Symbolic-link tests skip if the host cannot create links.
 ## Current limitations
 
 This scaffold does not ingest CRFs, transform CDASH/SDTM/ADaM data, generate
-Define-XML, validate studies, manage terminology releases, or integrate AI/LLM/MCP
+Define-XML, execute clinical data validation, manage terminology releases, or integrate AI/LLM/MCP
 services. Those are roadmap capabilities. Creating this directory tree does not
 provide regulatory compliance or validation certification.
 
