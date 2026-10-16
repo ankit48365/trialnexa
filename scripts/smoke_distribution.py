@@ -1,7 +1,8 @@
 """Install local distributions and exercise their CLI outside the source tree.
 
 Run with: uv run --locked python scripts/smoke_distribution.py <wheel> [<sdist>]
-Build first with uv build. The populated uv build cache permits offline installs.
+Build first with uv build. Installation may fetch runtime/build dependencies;
+the installed CLI commands themselves must operate offline.
 """
 
 import argparse
@@ -44,8 +45,6 @@ def check_distribution(artifact: Path) -> None:
                 uv,
                 "pip",
                 "install",
-                "--offline",
-                "--no-deps",
                 "--python",
                 str(python),
                 str(artifact),
@@ -147,9 +146,38 @@ def check_distribution(artifact: Path) -> None:
         assert invalid.returncode == 1, invalid
         assert "Invalid CSV headers" in invalid.stderr, invalid
         assert {p.name: p.read_bytes() for p in destination.iterdir()} == before
+        result = run("study", "init", "ABC-2026-01")
+        assert "Study initialized:" in result.stdout, result
+        assert "multiple installed versions" in result.stderr, result
+        study = workspace / "studies/ABC-2026-01"
+        yaml_before = (study / "study.yaml").read_bytes()
+        assert "ABC-2026-01" in run("study", "list").stdout
+        result = run("study", "validate", "ABC-2026-01")
+        assert "0 error(s)" in result.stdout, result
+        assert "not verified" in result.stderr, result
+        for command, identifier in (("init", "ABC-2026-01"), ("init", "../outside")):
+            invalid = subprocess.run(
+                [str(executable), "study", command, identifier],
+                cwd=workspace,
+                env=environment,
+                capture_output=True,
+                text=True,
+            )
+            assert invalid.returncode == 1, invalid
+        (study / "logs").rmdir()
+        invalid = subprocess.run(
+            [str(executable), "study", "validate", "ABC-2026-01"],
+            cwd=study / "raw/crf",
+            env=environment,
+            capture_output=True,
+            text=True,
+        )
+        assert invalid.returncode == 1 and "logs" in invalid.stderr, invalid
+        assert (study / "study.yaml").read_bytes() == yaml_before
+        assert {p.name: p.read_bytes() for p in destination.iterdir()} == before
         print(
             f"PASS: {artifact.name} installed CLI, consent, init, "
-            "CDASH import and errors"
+            "CDASH import, study init/list/validate and errors"
         )
 
 
