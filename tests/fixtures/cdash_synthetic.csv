@@ -1,0 +1,6 @@
+Version,Class,Domain,Data Collection Scenario/Implementation Option,Variable Order,CDASHIG Variable,CDASHIG Variable Label,DRAFT CDASHIG Definition,Question Text,Prompt,Type,CDASHIG Core,Case Report Form Completion Instructions,SDTMIG Target,Mapping Instructions,"CDISC CT Codelist Code(s), Subset Codes(s)",Codelist Submission Value,Implementation Notes
+2.3,Events,AE,Initial,1,SHARED,"Synthetic label, with comma","DRAFT synthetic definition: ""quoted"".","First line
+Second line — café 患者",Ask,Char,Perm,"Keep source text.",AE.AETERM,"If collected, derive a value; do not submit directly.","C00001, subset A",TEST,"  preserve surrounding spaces  "
+2.3,Events,AE,Follow-up,002,SHARED,Follow-up label,DRAFT example,,,Char,Perm,,,,,,Not submitted; review manually.
+2.3,Special Purpose,DM,,0,SHARED,Other domain,DRAFT other definition,Unicode µ?,,Num,Req,,DM.TEST,Copy only if authorized.,,,Synthetic only.
+2.3,Events,AE,Initial,1,SHARED,Repeated record,DRAFT repeated,,,,,,,,,,

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "trialnexa"
 version = "0.0.0.dev1"
-description = "Initialize an empty CDISC reference workspace."
+description = "Initialize workspaces and import offline CDASH reference metadata."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
@@ -32,6 +32,7 @@ include = [
     "/src",
     "/tests",
     "/scripts",
+    "/docs",
     "/README.md",
     "/LICENSE",
     "/AGENTS.md",

@@ -5,6 +5,7 @@ Build first with uv build. The populated uv build cache permits offline installs
 """
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -99,7 +100,56 @@ def check_distribution(artifact: Path) -> None:
         run("init", answer="y\n")
         assert set(workspace.rglob("*")) == paths | {existing}
         assert existing.read_text(encoding="utf-8") == "preserve"
-        print(f"PASS: {artifact.name} installed CLI, consent, empty tree, repeat init")
+        source = imports / "synthetic.csv"
+        fixture = (
+            Path(__file__).resolve().parent.parent
+            / "tests/fixtures/cdash_synthetic.csv"
+        )
+        source.write_bytes(fixture.read_bytes())
+        arguments = (
+            "reference",
+            "import",
+            "--domain",
+            "cdash",
+            "--version",
+            "2.3",
+            "--source",
+            str(source.relative_to(workspace)),
+        )
+        result = run(*arguments)
+        assert "Processed 4 rows; 2 distinct domains." in result.stdout, result
+        destination = workspace / "cdisc_reference/cdash/v2.3"
+        before = {p.name: p.read_bytes() for p in destination.iterdir()}
+        assert set(before) == {
+            "domains.json",
+            "variables.json",
+            "mappings_to_sdtm.json",
+        }
+        variables = json.loads(before["variables.json"])["variables"]
+        mappings = json.loads(before["mappings_to_sdtm.json"])["mappings"]
+        assert len(variables) == len(mappings) == 4
+        assert len(json.loads(before["domains.json"])["domains"]) == 2
+        assert mappings[1]["sdtmig_target"] is None
+        assert variables[1]["variable_order"] == "002"
+        assert variables[0]["question_text"].endswith("café 患者")
+        run(*arguments)
+        assert {p.name: p.read_bytes() for p in destination.iterdir()} == before
+        # Installed CLI error behavior must preserve the previous snapshot.
+        source.write_text("invalid headers\n", encoding="utf-8")
+        invalid = subprocess.run(
+            [str(executable), *arguments, "--force"],
+            cwd=workspace,
+            env=environment,
+            capture_output=True,
+            text=True,
+        )
+        assert invalid.returncode == 1, invalid
+        assert "Invalid CSV headers" in invalid.stderr, invalid
+        assert {p.name: p.read_bytes() for p in destination.iterdir()} == before
+        print(
+            f"PASS: {artifact.name} installed CLI, consent, init, "
+            "CDASH import and errors"
+        )
 
 
 def main() -> None:

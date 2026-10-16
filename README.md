@@ -1,9 +1,10 @@
 # TrialNexa
 
-TrialNexa is a Python CLI for setting up a workspace for future clinical trial
-data processing. The current implementation creates an **empty CDISC reference
-directory hierarchy** after explicit confirmation. It does not include or
-download standards, metadata, sample data, or licensed CDISC content.
+TrialNexa is a Python CLI for setting up a workspace and importing offline CDASH
+reference metadata for future clinical trial data processing. `init` creates an
+**empty CDISC reference directory hierarchy** after explicit confirmation.
+`reference import` converts a user-supplied CDASHIG 2.3 CSV into three JSON files.
+The package does not include or download licensed CDISC content.
 
 Python 3.12 or newer is required. Supported Python versions are 3.12, 3.13, and
 3.14 on Windows, macOS, and Linux.
@@ -138,6 +139,33 @@ deleted or overwritten. Success is reported only after all directories exist.
 Explicit cancellation and end-of-input exit with code 0; Ctrl+C exits with 130;
 invalid command syntax exits with 2.
 
+## Import CDASHIG reference metadata
+
+Supply your own authorized UTF-8 CDASHIG v2.3 CSV, then run from the workspace root:
+
+```console
+trialnexa reference import --domain cdash --version 2.3 --source cdisc_reference/cdash/imports/CDASHIG_v2.3.csv
+```
+
+This writes `domains.json`, `variables.json`, and `mappings_to_sdtm.json` under
+`cdisc_reference/cdash/v2.3/`. It retains every source row, blank SDTM targets,
+and mapping instructions as source text. It never executes mappings or creates
+a manifest. No network, API keys, or study configuration are needed.
+
+Relative source paths resolve from the current directory. The output root is the
+nearest ancestor with `cdisc_reference/`, otherwise the nearest Git checkout.
+Use `--workspace ROOT` to select an existing root explicitly. Without a marker or
+an explicit workspace, run `trialnexa init` at the intended root first. Running
+inside an initialized workspace's study subdirectory still writes to the shared
+reference root.
+
+Identical reruns preserve existing files. Different files require `--force`;
+unexpected destination entries and linked paths are rejected even with that flag.
+Invalid input is rejected before output creation; staged publication restores
+the previous snapshot if installation fails. See the [importer contract and JSON
+schema](docs/cdash-reference.md) for validation rules, recovery limits, column
+mapping, errors, and the optional full-source integration test.
+
 ## Development checks
 
 Run the repository's prescribed quality checks:
@@ -154,7 +182,8 @@ uv run --locked python scripts/smoke_distribution.py dist/trialnexa-0.0.0.dev1-p
 The smoke test installs each built distribution into a fresh temporary virtual
 environment and runs its console script from a separate temporary workspace,
 without `PYTHONPATH`. It checks help, default cancellation, consent, the empty
-tree, and repeat initialization. `uv build` also builds the wheel from the sdist.
+tree, repeat initialization, and CDASH import/rerun/error behavior using a small
+synthetic CSV. `uv build` also builds the wheel from the sdist.
 Automated tests use isolated temporary directories; filesystem errors are
 simulated so those checks also run on systems with elevated permissions.
 Symbolic-link tests skip if the host cannot create links.
