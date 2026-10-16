@@ -1,6 +1,7 @@
 """Filesystem services for the empty CDISC reference hierarchy."""
 
 import stat
+from dataclasses import dataclass
 from pathlib import Path
 
 REFERENCE_ROOT = Path("cdisc_reference")
@@ -27,6 +28,41 @@ REFERENCE_DIRECTORIES = (
 
 class WorkspaceError(RuntimeError):
     """The workspace hierarchy cannot be initialized safely."""
+
+
+@dataclass(frozen=True)
+class ReferencePaths:
+    """Resolved paths for an import, independent of CSV/model/publishing code."""
+
+    root: Path
+    source: Path
+    destination: Path
+
+
+def resolve_reference_paths(
+    source: Path, workspace: Path | None = None
+) -> ReferencePaths:
+    """Resolve source from cwd and root from an explicit path or ancestor marker.
+
+    Prefer the nearest initialized cdisc_reference workspace; otherwise use the
+    nearest Git checkout. Without either marker, require init or --workspace.
+    """
+    cwd = Path.cwd().resolve(strict=True)
+    source = source if source.is_absolute() else cwd / source
+    if workspace is None:
+        ancestors = (cwd, *cwd.parents)
+        root = next((p for p in ancestors if (p / REFERENCE_ROOT).exists()), None)
+        if root is None:
+            root = next((p for p in ancestors if (p / ".git").exists()), None)
+        if root is None:
+            raise WorkspaceError(
+                "No workspace root found. Run trialnexa init at the intended root "
+                "or specify --workspace ROOT."
+            )
+    else:
+        root = workspace.resolve(strict=True)
+    _check_directory(root, allow_missing=False)
+    return ReferencePaths(root, source, root / REFERENCE_ROOT / "cdash" / "v2.3")
 
 
 def _check_directory(path: Path, *, allow_missing: bool) -> None:

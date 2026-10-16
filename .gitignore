@@ -219,3 +219,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# User-supplied licensed standards and generated reference snapshots
+cdisc_reference/
