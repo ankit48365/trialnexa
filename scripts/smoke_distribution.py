@@ -131,6 +131,7 @@ def check_distribution(artifact: Path) -> None:
         assert len(json.loads(before["domains.json"])["domains"]) == 2
         assert mappings[1]["sdtmig_target"] is None
         assert variables[1]["variable_order"] == "002"
+        assert variables[0]["source_version"] == "CDASHIG v2.3"
         assert variables[0]["question_text"].endswith("café 患者")
         run(*arguments)
         assert {p.name: p.read_bytes() for p in destination.iterdir()} == before

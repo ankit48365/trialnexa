@@ -28,7 +28,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "cdash_synthetic.csv"
 NAMES = {"domains.json", "variables.json", "mappings_to_sdtm.json"}
 # Independent source-to-output acceptance contract, not the implementation map.
 FIELDS = [
-    "version",
+    "source_version",
     "class",
     "domain",
     "scenario",
@@ -95,7 +95,7 @@ def test_complete_import_preserves_all_18_columns(tmp_path: Path) -> None:
         zip(variables, mappings, expected_rows, strict=True), start=1
     ):
         assert variable["source_row"] == mapping["source_row"] == index
-        combined = {**variable, **mapping, "version": docs["variables.json"]["version"]}
+        combined = {**variable, **mapping}
         assert [combined[key] for key in FIELDS] == [
             value or None for value in expected
         ]
@@ -106,6 +106,37 @@ def test_complete_import_preserves_all_18_columns(tmp_path: Path) -> None:
     assert mappings[3]["sdtmig_target"] is None
     assert b"\\u" not in files["variables.json"]
     assert all(data.endswith(b"\n") for data in files.values())
+
+
+@pytest.mark.parametrize("source_version", ["2.3", "CDASHIG v2.3"])
+def test_supported_source_versions_are_preserved(
+    source_version: str, tmp_path: Path
+) -> None:
+    headers, rows = source_cells()
+    for row in rows:
+        row[0] = source_version
+    source = write_source(tmp_path, rows, headers)
+    result = import_cdash(source, workspace=tmp_path)
+    assert result.rows == 4
+    documents = {name: json.loads(data) for name, data in snapshot(tmp_path).items()}
+    assert all(doc["version"] == "2.3" for doc in documents.values())
+    assert {
+        row["source_version"] for row in documents["variables.json"]["variables"]
+    } == {source_version}
+
+
+@pytest.mark.parametrize(
+    "source_version", ["2.2", "CDASHIG v2.2", "CDASH v2.3", "", "CDASHIG v2.30"]
+)
+def test_unsupported_source_version_never_publishes(
+    source_version: str, tmp_path: Path
+) -> None:
+    headers, rows = source_cells()
+    rows[-1][0] = source_version
+    source = write_source(tmp_path, rows, headers)
+    with pytest.raises(ReferenceError, match="Version must identify CDASHIG 2.3"):
+        import_cdash(source, workspace=tmp_path)
+    assert not (tmp_path / "cdisc_reference").exists()
 
 
 def test_deterministic_reruns_and_force(tmp_path: Path) -> None:
@@ -467,6 +498,7 @@ def test_root_requires_marker_or_explicit_workspace(
         [],
         ["--domain", "sdtm", "--version", "2.3", "--source", "x"],
         ["--domain", "cdash", "--version", "9", "--source", "x"],
+        ["--domain", "cdash", "--version", "v2.3", "--source", "x"],
         ["--domain", "cdash", "--version", "2.3"],
     ],
 )
@@ -524,3 +556,8 @@ def test_optional_full_download(tmp_path: Path) -> None:
     assert len(variables) == len(mappings) == 1253
     assert len({row["cdashig_variable"] for row in variables}) == 888
     assert sum(row["sdtmig_target"] is not None for row in mappings) == 1060
+    with source.open(encoding="utf-8-sig", newline="") as stream:
+        original = list(csv.DictReader(stream))
+    assert [row["source_version"] for row in variables] == [
+        row["Version"] for row in original
+    ]

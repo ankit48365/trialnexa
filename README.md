@@ -29,7 +29,7 @@ updated `pyproject.toml` and `uv.lock` together. There are no runtime dependenci
 ```console
 uv build
 uv venv .venv-installed
-uv pip install --python .venv-installed dist/trialnexa-0.0.0.dev1-py3-none-any.whl
+uv pip install --python .venv-installed dist/trialnexa-0.0.0.dev2-py3-none-any.whl
 ```
 
 Run the installed command directly, including from a directory outside the
@@ -46,7 +46,7 @@ On Windows PowerShell:
 ```
 
 The source distribution in `dist/` can also be installed with `uv pip install`
-using the same `--python` argument. The version `0.0.0.dev1` is an unpublished
+using the same `--python` argument. The version `0.0.0.dev2` is an unpublished
 development version, defined only in `pyproject.toml`. Installed code can read it
 with `importlib.metadata.version("trialnexa")`.
 
@@ -54,7 +54,7 @@ To install or update the built wheel as a dependency in a separate uv project,
 run from that project's directory (replace the example absolute path):
 
 ```console
-uv add /absolute/path/to/trialnexa/dist/trialnexa-0.0.0.dev1-py3-none-any.whl
+uv add /absolute/path/to/trialnexa/dist/trialnexa-0.0.0.dev2-py3-none-any.whl
 uv run trialnexa --help
 uv run trialnexa init
 ```
@@ -176,7 +176,7 @@ uv run --locked ruff check .
 uv run --locked ruff format --check .
 uv run --locked pytest
 uv build
-uv run --locked python scripts/smoke_distribution.py dist/trialnexa-0.0.0.dev1-py3-none-any.whl dist/trialnexa-0.0.0.dev1.tar.gz
+uv run --locked python scripts/smoke_distribution.py dist/trialnexa-0.0.0.dev2-py3-none-any.whl dist/trialnexa-0.0.0.dev2.tar.gz
 ```
 
 The smoke test installs each built distribution into a fresh temporary virtual

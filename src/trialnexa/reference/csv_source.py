@@ -9,7 +9,7 @@ from trialnexa.reference import ReferenceError
 
 # Order defines the stable JSON field order; CSV columns may arrive reordered.
 COLUMNS = {
-    "Version": "version",
+    "Version": "source_version",
     "Class": "class",
     "Domain": "domain",
     "Data Collection Scenario/Implementation Option": "scenario",
@@ -73,8 +73,11 @@ def read_csv(source: Path) -> list[SourceRow]:
 
 def validate_source_values(index: int, values: dict[str, str | None]) -> None:
     """Validate structural identifiers, exact version and lossless order text."""
-    if values["version"] != "2.3":
-        raise ReferenceError(f"Source row {index}: Version must be exactly '2.3'.")
+    if values["source_version"] not in {"2.3", "CDASHIG v2.3"}:
+        raise ReferenceError(
+            f"Source row {index}: Version must identify CDASHIG 2.3 "
+            "(expected '2.3' or 'CDASHIG v2.3')."
+        )
     for key in ("class", "domain", "cdashig_variable"):
         value = values[key]
         # Structural validation only: allow generic '--' variables and avoid

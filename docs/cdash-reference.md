@@ -49,7 +49,12 @@ Empty files, header-only files, empty records, wrong-width records, broken quote
 fields, invalid UTF-8, and unreadable sources fail without replacing outputs.
 Quoted commas, doubled quotes, Unicode, and embedded LF/CRLF are preserved.
 
-Every `Version` must be exactly `2.3`. Class, Domain, and CDASHIG Variable must be
+Every `Version` must be `2.3` or the download's release label `CDASHIG v2.3`.
+Both identify the same supported release; other standards or releases fail.
+The original cell text is retained in each variable's `source_version`, while
+the top-level `version` remains canonical `2.3`. Keep CLI `--version 2.3`;
+`v2.3` is the output directory name, not a supported CLI argument.
+Class, Domain, and CDASHIG Variable must be
 nonblank, have no surrounding whitespace or ASCII control characters, and Domain
 and CDASHIG Variable must contain no whitespace. These are structural checks,
 not claims that names are verified against CDISC standards. Generic `--` variable
@@ -93,7 +98,7 @@ values are strings or `null`; required identifiers and Variable Order are string
 
 | CSV header | JSON key | Location |
 | --- | --- | --- |
-| Version | `version` | Each file's envelope; every row is validated |
+| Version | `source_version` | Variables; exact source text. Each envelope has canonical `version: "2.3"` |
 | Class | `class` | All record arrays |
 | Domain | `domain` | All record arrays |
 | Data Collection Scenario/Implementation Option | `scenario` | Variables and mappings; aggregated as `scenarios` in domains |
@@ -115,7 +120,7 @@ values are strings or `null`; required identifiers and Variable Order are string
 Mapping records have exactly `source_row`, `domain`, `class`, `scenario`,
 `cdashig_variable`, `sdtmig_target`, `mapping_instructions`, and
 `implementation_notes`. Variable records contain `source_row` and every field
-marked Variables above, excluding the envelope's `version`. No records are
+marked Variables above, including the original `source_version`. No records are
 deduplicated. Conditional, derived, complicated, and non-submitted mapping
 instructions remain text. Runtime validation checks exact keys, types, version,
 record counts, contiguous source IDs, matching contexts, domain/scenario coverage,

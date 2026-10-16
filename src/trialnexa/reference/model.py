@@ -16,7 +16,7 @@ MAPPING_FIELDS = (
 VARIABLE_FIELDS = tuple(
     key
     for key in COLUMNS.values()
-    if key not in {"version", "sdtmig_target", "mapping_instructions"}
+    if key not in {"sdtmig_target", "mapping_instructions"}
 )
 DOCUMENT_KEYS = {
     "domains.json": "domains",
@@ -71,7 +71,7 @@ def normalize_rows(rows: list[SourceRow]) -> dict[str, dict[str, Any]]:
     validate_documents(documents)
     # Validate the lossless 18-column reconstruction before any filesystem writes.
     for row, variable, mapping in zip(rows, variables, mappings, strict=True):
-        rebuilt = {**variable, **mapping, "version": "2.3"}
+        rebuilt = {**variable, **mapping}
         if any(rebuilt[key] != value for key, value in row.values.items()):
             raise ReferenceError(
                 f"Source row {row.source_row}: normalization lost text."
@@ -125,9 +125,7 @@ def validate_documents(documents: dict[str, dict[str, Any]]) -> None:
                 "required identifiers",
             )
     for variable, mapping in zip(variables, mappings, strict=True):
-        validate_source_values(
-            variable["source_row"], {**variable, **mapping, "version": "2.3"}
-        )
+        validate_source_values(variable["source_row"], {**variable, **mapping})
         require(
             all(
                 variable[k] == mapping[k]
