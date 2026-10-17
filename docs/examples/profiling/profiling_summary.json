@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "study_id": "DEMO_MODERN_01",
+  "generated_by": {
+    "tool": "trialnexa.source_profile",
+    "package_version": "0.0.0.dev2",
+    "algorithm_version": "1"
+  },
+  "document_kind": "profiling_summary",
+  "settings": {
+    "examples": {
+      "strategy": "suppressed",
+      "limit_per_column": 0,
+      "max_characters_per_value": 128,
+      "long_values": "omitted"
+    },
+    "distinct_limit": 10000,
+    "missing_sentinels": [],
+    "sentinel_matching": "strip_and_casefold_for_classification_only"
+  },
+  "scope": "all_direct_csv_files",
+  "files": [
+    {
+      "source_path": "studies/DEMO_MODERN_01/cdash/data/synthetic.csv",
+      "status": "profiled",
+      "row_count": 1,
+      "column_count": 1,
+      "warning_count": 0,
+      "errors": [],
+      "outputs": [
+        "studies/DEMO_MODERN_01/cdash/metadata/synthetic.metadata.yaml",
+        "studies/DEMO_MODERN_01/cdash/metadata/synthetic.profile.json"
+      ]
+    }
+  ],
+  "files_processed": 1,
+  "files_discovered": 1,
+  "error_count": 0,
+  "warning_count": 0,
+  "row_count": 1,
+  "column_count": 1,
+  "status": "profiled"
+}

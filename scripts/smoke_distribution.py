@@ -175,9 +175,43 @@ def check_distribution(artifact: Path) -> None:
         assert invalid.returncode == 1 and "logs" in invalid.stderr, invalid
         assert (study / "study.yaml").read_bytes() == yaml_before
         assert {p.name: p.read_bytes() for p in destination.iterdir()} == before
+        # Profiling must operate independently of all reference metadata.
+        shutil.rmtree(workspace / "cdisc_reference")
+        crf = study / "cdash/data/synthetic_crf.csv"
+        crf.write_text(
+            "Participant ID,Visit Date\n00123,03/04/2026\n", encoding="utf-8"
+        )
+        crf_before = crf.read_bytes()
+        assert "--sample-limit" in run("cdash", "profile", "--help").stdout
+        result = run("cdash", "profile", "--study", "ABC-2026-01")
+        assert "Profiled 1 file(s)" in result.stdout, result
+        assert not (workspace / "cdisc_reference").exists()
+        metadata = study / "cdash/metadata"
+        reports = {p.name: p.read_bytes() for p in metadata.iterdir()}
+        assert len(reports) == 4
+        profile = json.loads(reports["synthetic_crf.profile.json"])
+        assert profile["columns"][0]["inferred_type"] == "string"
+        assert profile["columns"][0]["examples"] == []
+        assert profile["columns"][1]["dates"]["ambiguous_locale"]
+        run("cdash", "profile", "--study", "ABC-2026-01")
+        assert {p.name: p.read_bytes() for p in metadata.iterdir()} == reports
+        run("cdash", "profile", "--study", "ABC-2026-01", "--input", crf.name)
+        assert crf.read_bytes() == crf_before
+        edited_path = metadata / "synthetic_crf.metadata.yaml"
+        edited_path.write_text("human: maintained\n", encoding="utf-8")
+        edited = subprocess.run(
+            [str(executable), "cdash", "profile", "--study", "ABC-2026-01"],
+            cwd=workspace,
+            env=environment,
+            capture_output=True,
+            text=True,
+        )
+        assert edited.returncode == 1 and "Unmanaged or edited" in edited.stderr
+        assert edited_path.read_text() == "human: maintained\n"
+        assert "00123" not in result.stdout + result.stderr + edited.stderr
         print(
             f"PASS: {artifact.name} installed CLI, consent, init, "
-            "CDASH import, study init/list/validate and errors"
+            "CDASH import, study init/list/validate, source profiling and errors"
         )
 
 

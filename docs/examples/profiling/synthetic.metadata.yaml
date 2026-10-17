@@ -1,0 +1,52 @@
+schema_version: '1.0'
+study_id: DEMO_MODERN_01
+generated_by:
+  tool: trialnexa.source_profile
+  package_version: 0.0.0.dev2
+  algorithm_version: '1'
+document_kind: metadata
+source:
+  filename: synthetic.csv
+  workspace_relative_path: studies/DEMO_MODERN_01/cdash/data/synthetic.csv
+  study_relative_path: cdash/data/synthetic.csv
+  sha256: 3475b5ca4d0088be545dd1bffe99723b5dba93234ab448b03c4d4bf6c79934dd
+  encoding: utf-8
+  delimiter: ','
+  row_count: 1
+  column_count: 1
+  parse_status: parsed
+settings:
+  examples:
+    strategy: suppressed
+    limit_per_column: 0
+    max_characters_per_value: 128
+    long_values: omitted
+  distinct_limit: 10000
+  missing_sentinels: []
+  sentinel_matching: strip_and_casefold_for_classification_only
+columns:
+- ordinal: 1
+  source_name: Participant ID
+  normalized_key: participantid
+  physical_type: string
+  inferred_type: string
+  type_status: identifier_like
+  mixed_type: false
+  type_evidence:
+    representation_counts:
+      integer: 1
+    identifier_header: true
+    leading_zero_integer_count: 1
+  nonnull_count: 1
+  missing_count: 0
+  missing_percentage: 0.0
+  dates:
+    status: not_observed
+    formats: {}
+    success_count: 0
+    failure_count: 0
+    invalid_calendar_count: 0
+    ambiguous_count: 0
+    ambiguous_locale: false
+    mixed_formats: false
+  warnings: []
