@@ -6,6 +6,8 @@ processing. `init` creates an
 **empty CDISC reference directory hierarchy** after explicit confirmation.
 `reference import` converts a user-supplied CDASHIG 2.3 CSV into three JSON files.
 `study init`, `study list`, and `study validate` manage independently named studies.
+`cdash profile` describes existing study CSVs and writes source metadata and
+statistical profiles, independently of reference metadata.
 The package does not include or download licensed CDISC content.
 
 Python 3.12 or newer is required. Supported Python versions are 3.12, 3.13, and
@@ -337,6 +339,49 @@ Successful init/list and structurally valid configuration exit **0**, including
 validation with warnings. Configuration/filesystem errors exit **1**; invalid CLI
 syntax exits **2**; Ctrl+C exits **130**. Validation prints error/warning counts.
 
+## Profile source CSVs
+
+Place upstream CSVs in an existing study's `cdash/data/`, then run:
+
+```console
+trialnexa cdash profile --study DEMO_MODERN_01
+trialnexa cdash profile --study DEMO_MODERN_01 --input 01_demographics_modern.csv
+trialnexa cdash profile --study DEMO_MODERN_01 --workspace /path/to/workspace
+trialnexa cdash profile --study DEMO_MODERN_01 --missing-sentinel NA
+trialnexa cdash profile --help
+```
+
+Profiling finds the nearest ancestor with `studies/` or uses `--workspace`.
+It validates the existing study ID, manifest and `paths.cdash` conventions.
+It works with **no `cdisc_reference/` directory** and reads no standards files.
+The other study commands keep their existing reference-marker requirements.
+
+Direct UTF-8/UTF-8-BOM, comma-delimited CSVs are processed in stable filename
+order, including quoted delimiters/newlines. Original columns, values and
+identifiers with leading zeros are preserved. Reports describe types, date-format
+ambiguity, missingness, distinct counts, lengths, numeric ranges/distributions
+and structural anomalies. Header-only files succeed with warnings; individual
+invalid files have explicit errors while valid files continue.
+
+Outputs are `<stem>.metadata.yaml`, `<stem>.profile.json` and
+`profiling_summary.json`, exclusively under the study's `cdash/metadata/`.
+An ownership manifest protects human edits. Unedited generated files regenerate;
+identical reruns preserve bytes and modification times. Colliding stems,
+unmanaged/edited artifacts, traversal, symlinks and Windows junctions are rejected.
+The summary describes this invocation; old reports are retained and may be stale.
+
+Examples are suppressed by default. `--sample-limit N` explicitly opts in to
+bounded raw strings that may contain sensitive data; logs never contain source
+records. `--distinct-limit N` bounds retained hashes and labels overflow as a
+lower bound. No sentinel, including `Unknown`, is automatically missing; use
+repeatable `--missing-sentinel TOKEN` to configure classification.
+
+These are source-only observations. No clinical domains, reference lookups,
+target-variable suggestions, mapping scores, conversions or standards validation
+are performed. A separate Part 4 workflow can consume the documented
+[report contracts](docs/source-profiling.md), [JSON/YAML schema](docs/schemas/source-profile.schema.json)
+and [complete synthetic examples](docs/examples/profiling/).
+
 ## Development checks
 
 Run the repository's prescribed quality checks:
@@ -356,7 +401,9 @@ without `PYTHONPATH`. It checks help, default cancellation, consent, the empty
 tree, repeat initialization, and CDASH import/rerun/error behavior using a small
 synthetic CSV. It also checks installed study init/list/validate, unsafe IDs,
 duplicate creation, and validation errors from a nested directory. Distribution
-installation may fetch runtime/build dependencies; the tested CLI operations are
+checks include installed source profiling without reference metadata, repeatability,
+and protection of human edits. Installation may fetch runtime/build dependencies;
+the tested CLI operations are
 offline. `uv build` also builds the wheel from the sdist.
 Automated tests use isolated temporary directories; filesystem errors are
 simulated so those checks also run on systems with elevated permissions.
@@ -364,7 +411,7 @@ Symbolic-link tests skip if the host cannot create links.
 
 ## Current limitations
 
-This scaffold does not ingest CRFs, transform CDASH/SDTM/ADaM data, generate
+This scaffold does not extract/upload CRFs, transform CDASH/SDTM/ADaM data, generate
 Define-XML, execute clinical data validation, manage terminology releases, or integrate AI/LLM/MCP
 services. Those are roadmap capabilities. Creating this directory tree does not
 provide regulatory compliance or validation certification.

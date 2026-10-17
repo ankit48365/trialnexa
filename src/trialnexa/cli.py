@@ -5,6 +5,9 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from trialnexa.profiling import ProfileError
+from trialnexa.profiling.csv_source import ProfileOptions
+from trialnexa.profiling.service import profile_study
 from trialnexa.reference import ReferenceError
 from trialnexa.reference.service import import_cdash
 from trialnexa.study import StudyError
@@ -88,6 +91,34 @@ def _study(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def _profile(arguments: argparse.Namespace) -> int:
+    try:
+        result = profile_study(
+            arguments.study,
+            workspace=arguments.workspace,
+            selected=arguments.input,
+            options=ProfileOptions(
+                sample_limit=arguments.sample_limit,
+                distinct_limit=arguments.distinct_limit,
+                missing_sentinels=tuple(arguments.missing_sentinel),
+            ),
+        )
+    except KeyboardInterrupt:
+        print("\nProfiling interrupted.", file=sys.stderr)
+        return 130
+    except (ProfileError, StudyError, OSError) as exc:
+        code = exc.code if isinstance(exc, ProfileError) else "study_path_error"
+        print(f"Unable to profile study [{code}]: {exc}", file=sys.stderr)
+        return 1
+    for filename, code, message in result.errors:
+        print(f"Error: {filename!r}: {code}: {message}", file=sys.stderr)
+    print(
+        f"Profiled {result.processed} file(s); {result.warnings} warning(s); "
+        f"{result.failures} failure(s). Reports: {result.destination}"
+    )
+    return 1 if result.failures else 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI and return its process exit code."""
     parser = argparse.ArgumentParser(
@@ -98,6 +129,51 @@ def main(argv: Sequence[str] | None = None) -> int:
     subcommands.add_parser(
         "init",
         help="Create empty CDISC reference directories in the current directory.",
+    )
+    cdash = subcommands.add_parser("cdash", help="Describe study source data.")
+    cdash_commands = cdash.add_subparsers(dest="cdash_command", required=True)
+    profiler = cdash_commands.add_parser(
+        "profile",
+        help="Profile existing study CSVs into source metadata.",
+        description=(
+            "Write source metadata YAML, statistical profile JSON and a summary "
+            "under cdash/metadata/. No reference files are read. Examples are "
+            "suppressed by default."
+        ),
+    )
+    profiler.add_argument("--study", required=True, help="Existing study ID.")
+    profiler.add_argument(
+        "--workspace", type=Path, help="Explicit workspace containing studies/."
+    )
+    profiler.add_argument(
+        "--input", help="One CSV filename directly under study cdash/data/."
+    )
+    profiler.add_argument(
+        "--sample-limit",
+        type=int,
+        default=0,
+        help=(
+            "Opt in to 0–100 raw example strings per column (default: 0). "
+            "Reports may contain sensitive values when enabled."
+        ),
+    )
+    profiler.add_argument(
+        "--distinct-limit",
+        type=int,
+        default=10000,
+        help=(
+            "Retained distinct hashes per column, 1–1000000 (default: 10000); "
+            "overflow yields an explicit lower bound."
+        ),
+    )
+    profiler.add_argument(
+        "--missing-sentinel",
+        action="append",
+        default=[],
+        help=(
+            "Treat this token as missing (stripped/case-insensitive); repeat. "
+            "Default: no sentinels, including Unknown."
+        ),
     )
     reference = subcommands.add_parser(
         "reference", help="Manage offline reference metadata."
@@ -143,6 +219,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _init()
     if arguments.command == "study":
         return _study(arguments)
+    if arguments.command == "cdash":
+        return _profile(arguments)
     try:
         result = import_cdash(
             arguments.source, workspace=arguments.workspace, force=arguments.force

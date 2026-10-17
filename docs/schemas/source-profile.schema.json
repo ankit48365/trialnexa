@@ -1,0 +1,842 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TrialNexa source metadata and profiling artifacts 1.0",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/metadata"
+    },
+    {
+      "$ref": "#/$defs/profile"
+    },
+    {
+      "$ref": "#/$defs/profiling_summary"
+    },
+    {
+      "$ref": "#/$defs/manifest"
+    }
+  ],
+  "$defs": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "filename": {
+          "type": "string"
+        },
+        "workspace_relative_path": {
+          "type": "string"
+        },
+        "study_relative_path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "encoding": {
+          "enum": [
+            "utf-8",
+            "utf-8-bom"
+          ]
+        },
+        "delimiter": {
+          "const": ","
+        },
+        "row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "parse_status": {
+          "enum": [
+            "parsed",
+            "header_only"
+          ]
+        }
+      },
+      "required": [
+        "filename",
+        "workspace_relative_path",
+        "study_relative_path",
+        "sha256",
+        "encoding",
+        "delimiter",
+        "row_count",
+        "column_count",
+        "parse_status"
+      ],
+      "additionalProperties": false
+    },
+    "dates": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "ambiguous",
+            "mixed",
+            "observed",
+            "unrecognized",
+            "not_observed"
+          ]
+        },
+        "formats": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "success_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failure_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "invalid_calendar_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ambiguous_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ambiguous_locale": {
+          "type": "boolean"
+        },
+        "mixed_formats": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "status",
+        "formats",
+        "success_count",
+        "failure_count",
+        "invalid_calendar_count",
+        "ambiguous_count",
+        "ambiguous_locale",
+        "mixed_formats"
+      ],
+      "additionalProperties": false
+    },
+    "metadata_column": {
+      "type": "object",
+      "properties": {
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_name": {
+          "type": "string"
+        },
+        "normalized_key": {
+          "type": "string"
+        },
+        "physical_type": {
+          "const": "string"
+        },
+        "inferred_type": {
+          "enum": [
+            "string",
+            "integer",
+            "decimal",
+            "boolean",
+            "date",
+            "datetime",
+            "unknown"
+          ]
+        },
+        "type_status": {
+          "enum": [
+            "no_observations",
+            "mixed",
+            "identifier_like",
+            "consistent"
+          ]
+        },
+        "mixed_type": {
+          "type": "boolean"
+        },
+        "type_evidence": {
+          "type": "object",
+          "properties": {
+            "representation_counts": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "identifier_header": {
+              "type": "boolean"
+            },
+            "leading_zero_integer_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "representation_counts",
+            "identifier_header",
+            "leading_zero_integer_count"
+          ],
+          "additionalProperties": false
+        },
+        "nonnull_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing_percentage": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "dates": {
+          "$ref": "#/$defs/dates"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "ordinal",
+        "source_name",
+        "normalized_key",
+        "physical_type",
+        "inferred_type",
+        "type_status",
+        "mixed_type",
+        "type_evidence",
+        "nonnull_count",
+        "missing_count",
+        "missing_percentage",
+        "dates",
+        "warnings"
+      ],
+      "additionalProperties": false
+    },
+    "profile_column": {
+      "type": "object",
+      "properties": {
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_name": {
+          "type": "string"
+        },
+        "normalized_key": {
+          "type": "string"
+        },
+        "physical_type": {
+          "const": "string"
+        },
+        "inferred_type": {
+          "enum": [
+            "string",
+            "integer",
+            "decimal",
+            "boolean",
+            "date",
+            "datetime",
+            "unknown"
+          ]
+        },
+        "type_status": {
+          "enum": [
+            "no_observations",
+            "mixed",
+            "identifier_like",
+            "consistent"
+          ]
+        },
+        "mixed_type": {
+          "type": "boolean"
+        },
+        "type_evidence": {
+          "type": "object",
+          "properties": {
+            "representation_counts": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "identifier_header": {
+              "type": "boolean"
+            },
+            "leading_zero_integer_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "representation_counts",
+            "identifier_header",
+            "leading_zero_integer_count"
+          ],
+          "additionalProperties": false
+        },
+        "nonnull_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing_percentage": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "dates": {
+          "$ref": "#/$defs/dates"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missingness": {
+          "type": "object",
+          "properties": {
+            "empty": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "whitespace": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "sentinel": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "empty",
+            "whitespace",
+            "sentinel"
+          ],
+          "additionalProperties": false
+        },
+        "distinct_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "distinct_lower_bound": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "distinct_method": {
+          "enum": [
+            "exact_sha256_set",
+            "capped_sha256_set"
+          ]
+        },
+        "length": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "max": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "mean": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          },
+          "required": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "additionalProperties": false
+        },
+        "numeric": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "min": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "max": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "failure_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "sign_counts": {
+              "type": "object",
+              "properties": {
+                "negative": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "zero": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "positive": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "negative",
+                "zero",
+                "positive"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "count",
+            "min",
+            "max",
+            "failure_count",
+            "sign_counts"
+          ],
+          "additionalProperties": false
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "ordinal",
+        "source_name",
+        "normalized_key",
+        "physical_type",
+        "inferred_type",
+        "type_status",
+        "mixed_type",
+        "type_evidence",
+        "nonnull_count",
+        "missing_count",
+        "missing_percentage",
+        "dates",
+        "warnings",
+        "missingness",
+        "distinct_count",
+        "distinct_lower_bound",
+        "distinct_method",
+        "length",
+        "numeric",
+        "examples"
+      ],
+      "additionalProperties": false
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "examples": {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "enum": [
+                "suppressed",
+                "first_distinct_nonmissing_raw_strings"
+              ]
+            },
+            "limit_per_column": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "max_characters_per_value": {
+              "const": 128
+            },
+            "long_values": {
+              "const": "omitted"
+            }
+          },
+          "required": [
+            "strategy",
+            "limit_per_column",
+            "max_characters_per_value",
+            "long_values"
+          ],
+          "additionalProperties": false
+        },
+        "distinct_limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "missing_sentinels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sentinel_matching": {
+          "const": "strip_and_casefold_for_classification_only"
+        }
+      },
+      "required": [
+        "examples",
+        "distinct_limit",
+        "missing_sentinels",
+        "sentinel_matching"
+      ],
+      "additionalProperties": false
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "file_result": {
+      "type": "object",
+      "properties": {
+        "source_path": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "profiled",
+            "warning",
+            "failed"
+          ]
+        },
+        "row_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "column_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "warning_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/error"
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "source_path",
+        "status",
+        "row_count",
+        "column_count",
+        "warning_count",
+        "errors",
+        "outputs"
+      ],
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "study_id": {
+          "type": "string"
+        },
+        "generated_by": {
+          "type": "object",
+          "properties": {
+            "tool": {
+              "const": "trialnexa.source_profile"
+            },
+            "package_version": {
+              "type": "string"
+            },
+            "algorithm_version": {
+              "const": "1"
+            }
+          },
+          "required": [
+            "tool",
+            "package_version",
+            "algorithm_version"
+          ],
+          "additionalProperties": false
+        },
+        "document_kind": {
+          "const": "metadata"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "settings": {
+          "$ref": "#/$defs/settings"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/metadata_column"
+          }
+        }
+      },
+      "required": [
+        "schema_version",
+        "study_id",
+        "generated_by",
+        "document_kind",
+        "source",
+        "settings",
+        "columns"
+      ],
+      "additionalProperties": false
+    },
+    "profile": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "study_id": {
+          "type": "string"
+        },
+        "generated_by": {
+          "type": "object",
+          "properties": {
+            "tool": {
+              "const": "trialnexa.source_profile"
+            },
+            "package_version": {
+              "type": "string"
+            },
+            "algorithm_version": {
+              "const": "1"
+            }
+          },
+          "required": [
+            "tool",
+            "package_version",
+            "algorithm_version"
+          ],
+          "additionalProperties": false
+        },
+        "document_kind": {
+          "const": "profile"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "settings": {
+          "$ref": "#/$defs/settings"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/profile_column"
+          }
+        }
+      },
+      "required": [
+        "schema_version",
+        "study_id",
+        "generated_by",
+        "document_kind",
+        "source",
+        "settings",
+        "columns"
+      ],
+      "additionalProperties": false
+    },
+    "profiling_summary": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "study_id": {
+          "type": "string"
+        },
+        "generated_by": {
+          "type": "object",
+          "properties": {
+            "tool": {
+              "const": "trialnexa.source_profile"
+            },
+            "package_version": {
+              "type": "string"
+            },
+            "algorithm_version": {
+              "const": "1"
+            }
+          },
+          "required": [
+            "tool",
+            "package_version",
+            "algorithm_version"
+          ],
+          "additionalProperties": false
+        },
+        "document_kind": {
+          "const": "profiling_summary"
+        },
+        "settings": {
+          "$ref": "#/$defs/settings"
+        },
+        "scope": {
+          "enum": [
+            "selected_file",
+            "all_direct_csv_files"
+          ]
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/file_result"
+          }
+        },
+        "files_processed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "files_discovered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warning_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "enum": [
+            "profiled",
+            "warning",
+            "failed"
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "study_id",
+        "generated_by",
+        "document_kind",
+        "settings",
+        "scope",
+        "files",
+        "files_processed",
+        "files_discovered",
+        "error_count",
+        "warning_count",
+        "row_count",
+        "column_count",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "manifest": {
+      "type": "object",
+      "properties": {
+        "generator": {
+          "const": "trialnexa.source_profile"
+        },
+        "schema_version": {
+          "const": "1.0"
+        },
+        "files": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      },
+      "required": [
+        "generator",
+        "schema_version",
+        "files"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
